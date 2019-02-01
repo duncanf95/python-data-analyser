@@ -1,0 +1,13 @@
+digraph also_likes_Duncan {
+	node [shape=box style=""]
+	f4ef
+	node [color=green shape=box style=filled]
+	beef
+	node [color=green shape=circle style=filled]
+	adbe
+	f4ef -> adbe
+	beef -> adbe
+	node [color=black shape=circle style=""]
+	ecbe
+	f4ef -> ecbe
+}

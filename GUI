@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+import matplotlib
+matplotlib.use("TkAgg")
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.figure import Figure
+from matplotlib import style
+
+import tkinter as tk
+import DataReader as dr
+import sys
+LARGE_FONT = ("verdana", 12)
+print('you were right')
+D = dr.DataReader('sample_100k_lines.json')
+
+def cmdArgs():
+    found=""
+    ARGS = {}
+    for arg in sys.argv:
+        if found == "-t":
+            ARGS["task"] = arg
+            found = ""
+        elif found == "-u":
+            ARGS["userId"] = arg
+            found = ""
+        elif found == "-f":
+            ARGS["docId"] = arg
+            found = ""
+
+        if arg == "-t":
+            found = "-t"
+        elif arg == "-u":
+            found = "-u"
+        elif arg == "-f":
+            found = "-f"
+    return ARGS
+
+ARGS = cmdArgs()
+print(ARGS)
+
+
+class GUI(tk.Tk):
+
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
+
+        tk.Tk.wm_title(self, "Issu Data Reader")
+
+        container = tk.Frame(self)
+        container.grid(sticky = tk.N + tk.S + tk.E + tk.W, row = 0, column = 0)
+
+
+        self.frames = {}
+        self.pages = (StartPage, PageOne, PageTwo)
+        for f in self.pages:
+            frame = f(container, self)
+
+            self.frames[f] = frame
+
+            frame.grid(row=0, column = 0, sticky="nsew")
+
+        self.show_frame(StartPage)
+
+    def show_frame(self,cont):
+        frame = self.frames[cont]
+        frame.tkraise()
+
+
+class StartPage(tk.Frame):
+
+    def __init__(self,parent,controller):
+        tk.Frame.__init__(self,parent)
+        label = tk.Label(self, text = "start page", font=LARGE_FONT)
+        label.pack(pady=10,padx=10)
+
+        button1 = tk.Button(self, text="Visit Page 1", command = lambda: controller.show_frame(PageTwo))
+        button1.pack()
+
+    def testFunc(self, inputStr):
+        print(inputStr)
+
+
+class PageOne(tk.Frame):
+    def __init__(self,parent,controller):
+        tk.Frame.__init__(self,parent)
+        label = tk.Label(self, text = "other page", font=LARGE_FONT)
+        label.grid(row = 1 ,column = 1, sticky = "nsew")
+
+        button1 = tk.Button(self, text="go back", command = lambda: controller.show_frame(StartPage))
+        button1.grid(row = 2, column = 1)
+
+
+class PageTwo(tk.Frame):
+    def __init__(self,parent,controller):
+        tk.Frame.__init__(self,parent)
+        label = tk.Label(self, text = "graph page", font=LARGE_FONT)
+        label.grid(row = 1, column = 1, sticky = "nsew")
+        self.g = D.g
+
+        button1 = tk.Button(self, text="go back", command = lambda: controller.show_frame(StartPage))
+        button1.grid(row = 2, column = 1, sticky = "nsew")
+
+        button2 = tk.Button(self, text="all Browser", command = lambda: self.AllBrowserHistogram(Toolbar=True))
+        button2.grid(row = 2, column = 2, sticky = "nsew")
+
+        button3 = tk.Button(self, text="Continent", command = lambda: self.ContinentHistogram(Toolbar=True))
+        button3.grid(row = 2, column = 3, sticky = "nsew")
+
+        button4 = tk.Button(self, text="Gen Browser", command = lambda: self.GeneralBrowserHistogram(Toolbar=True))
+        button4.grid(row = 2, column = 4, sticky = "nsew")
+
+        if(ARGS["task"] == "2a"):
+            self.CountryHistorgram(Toolbar=True)
+        elif(ARGS["task"] == "2b"):
+            self.CountryHistorgram(Toolbar=True)
+        elif(ARGS["task"] == "3a"):
+            self.AllBrowserHistogram(Toolbar=True)
+        elif(ARGS["task"] == "3b"):
+            self.GeneralBrowserHistogram(Toolbar=True)
+        elif(ARGS["task"] == "4d"):
+            D.OutputUserDoc(ARGS["docId"], ARGS["userId"])
+        elif(ARGS["task"] == "5"):
+            D.CreateDotFile(ARGS["docId"], ARGS["userId"])
+
+
+        self.columnconfigure(1, weight = 1)
+        self.columnconfigure(2, weight = 1)
+        self.columnconfigure(3, weight = 1)
+        self.columnconfigure(4, weight = 1)
+
+
+
+    def DrawGraph(self, Toolbar, Data):
+
+
+        data = Data
+
+        f = Figure(figsize=(11.8,6), dpi=100)
+        a = f.add_subplot(111)
+
+        a.bar(data['xData'], data['yData'], width = 1.0, color='g')
+        for tick in a.get_xticklabels():
+            tick.set_rotation(90)
+            tick.set_fontsize(4.5)
+        #a.xticks(data['xData'],data['xData'], rotation = 'vertical')
+        a.margins(x = 0)
+        f.subplots_adjust(bottom = 0.25, left=0.06, right=0.99)
+
+        canvas = FigureCanvasTkAgg(f,self)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row = 3, column = 1,columnspan=4, sticky = tk.N + tk.S + tk.E + tk.W)
+
+        if Toolbar:
+            self.DrawToolbar(canvas)
+
+    def GeneralBrowserHistogram(self, Toolbar):
+        Data = self.g.GeneralBrowserHistogram(D.b)
+        self.DrawGraph(Toolbar, Data)
+
+    def ContinentHistogram(self, Toolbar):
+        Data = self.g.ContinentHistogram(D.u, ARGS["docId"])
+        self.DrawGraph(Toolbar, Data)
+
+    def AllBrowserHistogram(self,Toolbar):
+        Data = self.g.AllBrowserHistogram(D.b)
+        self.DrawGraph(Toolbar, Data)
+
+    def CountryHistorgram(self,Toolbar):
+        Data = self.g.CountryHistorgram(D.u, ARGS["docId"])
+        print(Data)
+        self.DrawGraph(Toolbar, Data)
+
+
+
+    def DrawToolbar(self, canvas):
+
+        tFrame = tk.Frame(self)
+        tFrame.grid(row = 5, column = 1, sticky = "nsew", columnspan = 4)
+        toolbar = NavigationToolbar2Tk(canvas, tFrame)
+        toolbar.update()
+
+
+def main():
+    cmdArgs()
+    print(ARGS)
+    app = GUI()
+    app.geometry("1280x720")
+    app.mainloop()
+
+
+
+
+if __name__ == '__main__':
+    main()
